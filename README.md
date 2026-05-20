@@ -30,7 +30,7 @@ python app.py
 1. Push to GitHub
 2. New Web Service on render.com → connect repo
 3. Build command: `pip install -r requirements.txt`
-4. Start command: `gunicorn app:app --bind 0.0.0.0:$PORT`
+4. Render automatically detects the configuration from the `Procfile` and builds the environment
 5. Free tier — always on (refreshes keep it alive)
 
 ## Customise
