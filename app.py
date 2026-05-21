@@ -354,11 +354,7 @@ html, body {
 </body>
 </html>"""
 
-# ── Routes ────────────────────────────────────────────────
 
-@app.route('/')
-def dashboard():
-    return render_template_string(HTML, d=_cache['data'])
 
 # ── Startup ───────────────────────────────────────────────
 
@@ -408,3 +404,31 @@ PORTFOLIO_HTML = """<!DOCTYPE html>
 
 # ── Routes ────────────────────────────────────────────────
 
+# ── Safe Mock Fallback Object ─────────────────────────────
+SAFE_FALLBACK = {
+    'weather': {'temp': '--', 'uv': '--', 'aqi': '--'},
+    'sky': '<svg viewBox="0 0 600 600" width="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="300" cy="300" r="255" fill="#fff" stroke="#000" stroke-width="3"/><text x="300" y="300" text-anchor="middle" fill="#000">Loading Map Data...</text></svg>',
+    'now': '--:--',
+    'date': 'Refreshing...'
+}
+
+# ── Routes ────────────────────────────────────────────────
+
+@app.route('/')
+def dashboard():
+    # 1. Grab current cache layer
+    cached_data = _cache.get('data')
+    
+    # 2. Defend against 'None' type assignment crashes
+    if not cached_data or cached_data.get('weather') is None:
+        try:
+            refresh()
+            cached_data = _cache.get('data')
+        except Exception:
+            cached_data = SAFE_FALLBACK
+
+    return render_template_string(HTML, d=cached_data)
+
+@app.route('/portfolio')
+def portfolio():
+    return render_template_string(PORTFOLIO_HTML, tools=MY_TOOLS)
