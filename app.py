@@ -202,27 +202,43 @@ def build_svg(obs):
 # ── Weather ────────────────────────────────────────────────
 
 def fetch_weather():
-    data = {'temp': '--', 'uv': '--', 'aqi': '--'}
+    data = {"temp": "--", "uv": "--", "aqi": "--"}
+
+    # temperature — current is valid for temperature_2m
     try:
-        wx = requests.get(
-            f'https://api.open-meteo.com/v1/forecast'
-            f'?latitude={LAT}&longitude={LON}'
-            f'&current=temperature_2m,uv_index',
+        resp = requests.get(
+            f"https://api.open-meteo.com/v1/forecast"
+            f"?latitude={LAT}&longitude={LON}"
+            f"&current=temperature_2m",
             timeout=4
-        ).json()['current']
-        data['temp'] = round(wx['temperature_2m'])
-        data['uv']   = round(wx['uv_index'], 1)
+        ).json()
+        data["temp"] = round(resp["current"]["temperature_2m"])
     except Exception as e:
-        print(f"Weather error: {e}")
+        print(f"Temp error: {e}")
+
+    # uv_index — only available as daily max, not current
     try:
-        aqi = requests.get(
-            f'https://air-quality-api.open-meteo.com/v1/air-quality'
-            f'?latitude={LAT}&longitude={LON}&current=us_aqi',
+        resp_uv = requests.get(
+            f"https://api.open-meteo.com/v1/forecast"
+            f"?latitude={LAT}&longitude={LON}"
+            f"&daily=uv_index_max&forecast_days=1&timezone=Asia/Kolkata",
             timeout=4
-        ).json()['current']['us_aqi']
-        data['aqi'] = round(aqi)
+        ).json()
+        data["uv"] = round(resp_uv["daily"]["uv_index_max"][0], 1)
+    except Exception as e:
+        print(f"UV error: {e}")
+
+    # AQI
+    try:
+        resp_aqi = requests.get(
+            f"https://air-quality-api.open-meteo.com/v1/air-quality"
+            f"?latitude={LAT}&longitude={LON}&current=us_aqi",
+            timeout=4
+        ).json()
+        data["aqi"] = round(resp_aqi["current"]["us_aqi"])
     except Exception as e:
         print(f"AQI error: {e}")
+
     return data
 
 
