@@ -30,17 +30,30 @@ PLANETS = {
     'Saturn':  ephem.Saturn,
 }
 
-# ── Safe Cache Initialization ─────────────────────────────
+# ── Safe Cache & Failsafe Definitions ─────────────────────
 _cache = {
     'data': {
         'weather': {'temp': '--', 'uv': '--', 'aqi': '--'},
         'sky': '',
-        'now': 'Initializing...',
-        'date': 'Loading date...'
+        'now': '--:--',
+        'date': 'Refreshing...'
     },
     'ts': 0
 }
 CACHE_TTL = 1800   # 30 minutes
+
+SAFE_FALLBACK = {
+    'weather': {'temp': '--', 'uv': '--', 'aqi': '--'},
+    'sky': '<svg viewBox="0 0 600 600" width="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="300" cy="300" r="255" fill="#fff" stroke="#000" stroke-width="3"/><text x="300" y="300" text-anchor="middle" fill="#000" font-family="sans-serif" font-size="16" font-weight="bold">Loading Map Data...</text></svg>',
+    'now': '--:--',
+    'date': 'Refreshing...'
+}
+
+# ── Portfolio Data Config ─────────────────────────────────
+MY_TOOLS = [
+    {"name": "E-Ink Sky Canvas & Weather Dashboard", "desc": "A micro-data pipeline optimizing astronomical pyephem computations and Open-Meteo REST endpoints into declarative, ultra-low-power vector matrices tailored specifically for legacy WebKit firmware runtimes.", "url": "/"},
+    {"name": "Instagram Automation Tool", "desc": "Python-based microservice orchestrating automated DM responses, utilizing SQLite metadata models for state preservation and high-fidelity operational tracking.", "url": "#"},
+]
 
 # ── Astronomy helpers ─────────────────────────────────────
 
@@ -49,7 +62,6 @@ def make_observer():
     obs.lat       = LAT
     obs.lon       = LON
     obs.elevation = ELEV
-    # Works across older Python environments flawlessly
     obs.date      = ephem.date(datetime.utcnow())
     return obs
 
@@ -63,7 +75,6 @@ def altaz_to_xy(alt_deg, az_deg, cx=300, cy=300, r=250):
 
 
 def mag_to_r(mag):
-    """Significantly boosted radius sizes for e-ink visibility"""
     if mag < 0:    return 8.0
     if mag < 1.0:  return 6.5
     if mag < 1.5:  return 5.5
@@ -79,10 +90,10 @@ def build_svg(obs):
     sun     = ephem.Sun(obs)
     sun_alt = math.degrees(sun.alt)
 
-    # High contrast sky canvas boundary (Black ring, clean White inside)
+    # High contrast sky canvas boundary
     p.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff" stroke="#000" stroke-width="3"/>')
 
-    # Compass labels (Darker, slightly pulled out)
+    # Compass labels
     for label, az in [('N', 0), ('E', 90), ('S', 180), ('W', 270)]:
         lx, ly = altaz_to_xy(0, az, cx, cy, r + 18)
         p.append(
@@ -92,18 +103,17 @@ def build_svg(obs):
         )
 
     if sun_alt > -6:
-        # Daytime template state
         sunset = ephem.localtime(obs.next_setting(ephem.Sun())).strftime('%H:%M')
         p.append(
             f'<text x="{cx}" y="{cy - 25}" text-anchor="middle" '
-            f'fill="#444" font-size="16" font-family="Georgia">Sky map clears at</text>'
+            f'fill="#000" font-size="16" font-family="Georgia" font-weight="bold">Sky map clears at</text>'
         )
         p.append(
             f'<text x="{cx}" y="{cy + 15}" text-anchor="middle" '
             f'fill="#000" font-size="28" font-family="Georgia" font-weight="bold">{sunset}</text>'
         )
     else:
-        # ── Stars (Inverted: Black on White) ─────────────────
+        # Stars
         for name in STAR_NAMES:
             try:
                 star = ephem.star(name)
@@ -113,11 +123,7 @@ def build_svg(obs):
                 if alt > 3:
                     x, y  = altaz_to_xy(alt, az, cx, cy, r)
                     dot_r = mag_to_r(star.mag)
-                    
-                    # Bold star plot
                     p.append(f'<circle cx="{x}" cy="{y}" r="{dot_r}" fill="#000"/>')
-                    
-                    # Larger, high-readability star labels
                     if star.mag < 1.6:
                         p.append(
                             f'<text x="{x + dot_r + 4}" y="{y + 4}" '
@@ -126,7 +132,7 @@ def build_svg(obs):
             except Exception:
                 pass
 
-        # ── Planets ───────────────────────────────────────
+        # Planets
         for name, Cls in PLANETS.items():
             try:
                 planet = Cls(obs)
@@ -135,7 +141,6 @@ def build_svg(obs):
                 az     = math.degrees(planet.az)
                 if alt > 3:
                     x, y = altaz_to_xy(alt, az, cx, cy, r)
-                    # Outer Ringed point for planet layout distinction
                     p.append(f'<circle cx="{x}" cy="{y}" r="8" fill="#000"/>')
                     p.append(f'<circle cx="{x}" cy="{y}" r="11" fill="none" stroke="#000" stroke-width="2"/>')
                     p.append(
@@ -146,7 +151,7 @@ def build_svg(obs):
             except Exception:
                 pass
 
-        # ── Moon ──────────────────────────────────────────
+        # Moon
         try:
             moon     = ephem.Moon(obs)
             moon.compute(obs)
@@ -165,12 +170,12 @@ def build_svg(obs):
                 rise_str = ephem.localtime(rise).strftime('%H:%M')
                 p.append(
                     f'<text x="{cx}" y="{cy + r - 25}" text-anchor="middle" '
-                    f'fill="#333" font-size="12" font-family="Georgia" font-style="italic">Moon rises {rise_str}</text>'
+                    f'fill="#000" font-size="12" font-family="Georgia" font-style="italic" font-weight="bold">Moon rises {rise_str}</text>'
                 )
         except Exception:
             pass
 
-    # Zenith marker crosshair
+    # Zenith marker
     p.append(f'<circle cx="{cx}" cy="{cy}" r="3" fill="#000"/>')
 
     return (
@@ -179,40 +184,51 @@ def build_svg(obs):
     )
 
 
-# ── Weather ───────────────────────────────────────────────
+# ── Isolated Weather Fetcher ──────────────────────────────
 
 def fetch_weather():
+    data = {'temp': '--', 'uv': '--', 'aqi': '--'}
+    
     try:
-        wx = requests.get(
-            f'https://api.open-meteo.com/v1/forecast'
-            f'?latitude={LAT}&longitude={LON}'
-            f'&current=temperature_2m,uv_index',
-            timeout=5
-        ).json()['current']
-        
-        aqi = requests.get(
-            f'https://air-quality-api.open-meteo.com/v1/air-quality'
-            f'?latitude={LAT}&longitude={LON}&current=us_aqi',
-            timeout=5
-        ).json()['current']['us_aqi']
-        
-        return {'temp': round(wx['temperature_2m']), 'uv': round(wx['uv_index'], 1), 'aqi': round(aqi)}
-    except Exception:
-        return _cache['data']['weather']
+        wx_url = f'https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current=temperature_2m,uv_index'
+        wx = requests.get(wx_url, timeout=3).json()['current']
+        data['temp'] = round(wx['temperature_2m'])
+        data['uv'] = round(wx['uv_index'], 1)
+    except Exception as e:
+        print(f"Weather API unavailable: {e}")
+
+    try:
+        aqi_url = f'https://air-quality-api.open-meteo.com/v1/air-quality?latitude={LAT}&longitude={LON}&current=us_aqi'
+        aqi = requests.get(aqi_url, timeout=3).json()['current']['us_aqi']
+        data['aqi'] = round(aqi)
+    except Exception as e:
+        print(f"AQI API unavailable: {e}")
+
+    return data
 
 
-# ── Refresh Logic ─────────────────────────────────────────
+# ── Refresh Management ────────────────────────────────────
 
 def refresh():
-    obs     = make_observer()
+    try:
+        obs = make_observer()
+        sky = build_svg(obs)
+    except Exception as e:
+        print(f"Astro Engine failure: {e}")
+        sky = SAFE_FALLBACK['sky']
+
     weather = fetch_weather()
-    sky     = build_svg(obs)
-    now     = datetime.now().strftime('%H:%M')
-    date    = datetime.now().strftime('%a, %b %d')
+    now  = datetime.now().strftime('%H:%M')
+    date = datetime.now().strftime('%a, %b %d')
     
-    _cache['data'] = {'weather': weather, 'sky': sky, 'now': now, 'date': date}
-    _cache['ts']   = time.time()
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Map refreshed.")
+    _cache['data'] = {
+        'weather': weather, 
+        'sky': sky, 
+        'now': now, 
+        'date': date
+    }
+    _cache['ts'] = time.time()
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Map cache completely updated.")
 
 
 def background_refresh():
@@ -221,10 +237,11 @@ def background_refresh():
         try:
             refresh()
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Background thread runtime error: {e}")
 
 
-# ── HTML Template (Clean Medium Post Aesthetic) ───────────
+# ── HTML Template Strings ─────────────────────────────────
+
 HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -234,14 +251,12 @@ HTML = """<!DOCTYPE html>
 <title>OD · Sky</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-
 html, body {
   width:100%; height:100%;
   background:#fff; color:#000;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   overflow:hidden;
 }
-
 .frame {
   width:100%; height:100%;
   position:absolute; top:0; left:0;
@@ -249,32 +264,26 @@ html, body {
   transform: rotate(180deg);
   -webkit-transform-origin: 50% 50%;
   transform-origin: 50% 50%;
-  padding: 20px; /* Reduced outer padding slightly to give content more room */
+  padding: 20px;
 }
-
-/* ── COMPACT HEADER PANEL (Tuned to match Medium layout) ── */
 .header-panel {
   width: 100%;
-  height: 90px; /* Dropped from 125px to reclaim sky space */
+  height: 90px;
   border-bottom: 5px solid #000;
   background: #fff;
 }
-
 .table-layout {
   width: 100%;
   border-collapse: collapse;
 }
-
 .table-layout td {
   vertical-align: top;
 }
-
-/* Left side metrics block */
 .left-block {
   width: 45%;
 }
 .temp-display {
-  font-size: 46px; /* Scaled down slightly to fit the compact header height */
+  font-size: 46px;
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: -2px;
@@ -283,19 +292,17 @@ html, body {
 }
 .sub-metrics {
   font-size: 13px;
-  font-weight: 700; /* Pulled back slightly from 900 so large font pops more */
+  font-weight: 700;
   color: #000;
   letter-spacing: 0.3px;
-  -webkit-text-stroke: 0.1px #000; /* Lightened stroke to create elegant weight hierarchy */
+  -webkit-text-stroke: 0.1px #000;
 }
-
-/* Right side date/time block */
 .right-block {
   width: 55%;
   text-align: right;
 }
 .date-display {
-  font-size: 24px; /* Slightly more compact */
+  font-size: 24px;
   font-weight: 900;
   letter-spacing: -0.5px;
   line-height: 1.0;
@@ -307,22 +314,19 @@ html, body {
   font-weight: 700;
   color: #000;
   letter-spacing: 0.1px;
-  -webkit-text-stroke: 0.1px #000; /* Cleans up small text anti-aliasing */
+  -webkit-text-stroke: 0.1px #000;
 }
-
-/* ── EXPANDED SKY CANVAS WRAPPER ────────────────────────── */
 .sky-container {
   position: absolute;
-  top: 115px; /* Moved up significantly from 165px to grab the empty space */
+  top: 115px;
   bottom: 10px;
   left: 15px;
   right: 15px;
   display: block;
   text-align: center;
 }
-
 .sky-container svg {
-  height: 100%; /* Pushes the circular chart to fill maximum available frame height */
+  height: 100%;
   width: auto;
   margin: 0 auto;
 }
@@ -330,7 +334,6 @@ html, body {
 </head>
 <body>
 <div class="frame">
-  
   <div class="header-panel">
     <table class="table-layout">
       <tr>
@@ -345,53 +348,33 @@ html, body {
       </tr>
     </table>
   </div>
-  
   <div class="sky-container">
     {{ d.sky | safe }}
   </div>
-
 </div>
 </body>
 </html>"""
-
-
-
-# ── Startup ───────────────────────────────────────────────
-
-if __name__ == '__main__':
-    print("Building high-contrast sky map...")
-    refresh()
-    print("Ready.")
-    threading.Thread(target=background_refresh, daemon=True).start()
-    app.run(host='0.0.0.0', port=5001, debug=False)
-
-    # ── Portfolio Data Config ─────────────────────────────────
-MY_TOOLS = [
-    {"name": "Instagram Automation Tool", "desc": "Python & SQLite backend managing automated customer/adopter DM workflows.", "url": "#"},
-    {"name": "E-Ink Sky & Weather Analytics Canvas", "desc": "Data pipeline translating pyephem tracking calculations directly into Kobo-friendly legacy SVG vectors.", "url": "/"},
-    # Add your other project links here!
-]
 
 PORTFOLIO_HTML = """<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orpita Das · AI-Assisted Tools Portfolio</title>
+    <title>Orpita Das · Portfolio</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #fafafa; color: #222; max-width: 600px; margin: 40px auto; padding: 20px; }
-        h1 { font-size: 24px; margin-bottom: 5px; color: #000; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fafafa; color: #222; max-width: 600px; margin: 40px auto; padding: 20px; }
+        h1 { font-size: 26px; margin-bottom: 5px; color: #000; letter-spacing: -0.5px; }
         .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
-        .card { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .card { background: #fff; padding: 22px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.01); }
         .card h2 { font-size: 18px; margin: 0 0 8px 0; }
-        .card h2 a { color: #002b5c; text-decoration: none; }
+        .card h2 a { color: #004b93; text-decoration: none; font-weight: 700; }
         .card h2 a:hover { text-decoration: underline; }
-        .card p { font-size: 14px; color: #555; line-height: 1.5; margin: 0; }
+        .card p { font-size: 14px; color: #444; line-height: 1.5; margin: 0; }
     </style>
 </head>
 <body>
-    <h1>Project Engineering Showcase</h1>
-    <div class="subtitle">A collection of custom utilities and automated systems.</div>
+    <h1>Data Infrastructure & Automation Tools</h1>
+    <div class="subtitle">A showcase of production-ready components and data services.</div>
     
     {% for tool in tools %}
     <div class="card">
@@ -402,33 +385,30 @@ PORTFOLIO_HTML = """<!DOCTYPE html>
 </body>
 </html>"""
 
-# ── Routes ────────────────────────────────────────────────
-
-# ── Safe Mock Fallback Object ─────────────────────────────
-SAFE_FALLBACK = {
-    'weather': {'temp': '--', 'uv': '--', 'aqi': '--'},
-    'sky': '<svg viewBox="0 0 600 600" width="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="300" cy="300" r="255" fill="#fff" stroke="#000" stroke-width="3"/><text x="300" y="300" text-anchor="middle" fill="#000">Loading Map Data...</text></svg>',
-    'now': '--:--',
-    'date': 'Refreshing...'
-}
-
-# ── Routes ────────────────────────────────────────────────
+# ── Endpoints ─────────────────────────────────────────────
 
 @app.route('/')
 def dashboard():
-    # 1. Grab current cache layer
     cached_data = _cache.get('data')
-    
-    # 2. Defend against 'None' type assignment crashes
-    if not cached_data or cached_data.get('weather') is None:
+    if not cached_data or cached_data.get('sky') == '':
         try:
             refresh()
             cached_data = _cache.get('data')
         except Exception:
             cached_data = SAFE_FALLBACK
-
     return render_template_string(HTML, d=cached_data)
+
 
 @app.route('/portfolio')
 def portfolio():
     return render_template_string(PORTFOLIO_HTML, tools=MY_TOOLS)
+
+
+# ── Entrypoint Execution ──────────────────────────────────
+
+if __name__ == '__main__':
+    print("Pre-rendering baseline sky grid coordinates...")
+    refresh()
+    print("Cache warm. Initializing background thread daemon...")
+    threading.Thread(target=background_refresh, daemon=True).start()
+    app.run(host='0.0.0.0', port=5001, debug=False)
