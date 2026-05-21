@@ -202,42 +202,32 @@ def build_svg(obs):
 # ── Weather ────────────────────────────────────────────────
 
 def fetch_weather():
-    data = {"temp": "--", "uv": "--", "aqi": "--"}
-
-    # temperature — current is valid for temperature_2m
+    data = {'temp': '--', 'uv': '--', 'aqi': '--'}
+    
+    # 1. New Ultra-Reliable Weather Fetch (wttr.in)
     try:
-        resp = requests.get(
-            f"https://api.open-meteo.com/v1/forecast"
-            f"?latitude={LAT}&longitude={LON}"
-            f"&current=temperature_2m",
-            timeout=4
-        ).json()
-        data["temp"] = round(resp["current"]["temperature_2m"])
+        # Fetching JSON weather data for Pune
+        response = requests.get('https://wttr.in/Pune?format=j1', timeout=4)
+        if response.status_code == 200:
+            wx = response.json()
+            # Extract current temperature
+            current_condition = wx['current_condition'][0]
+            data['temp'] = round(float(current_condition['temp_C']))
+            
+            # Extract UV index
+            data['uv'] = round(float(current_condition['uvIndex']), 1)
+        else:
+            print(f"wttr.in returned status code: {response.status_code}")
     except Exception as e:
-        print(f"Temp error: {e}")
+        print(f"wttr.in Weather API unavailable: {e}")
 
-    # uv_index — only available as daily max, not current
+    # 2. Air Quality Fetch (Keep Open-Meteo since it's currently working)
     try:
-        resp_uv = requests.get(
-            f"https://api.open-meteo.com/v1/forecast"
-            f"?latitude={LAT}&longitude={LON}"
-            f"&daily=uv_index_max&forecast_days=1&timezone=Asia/Kolkata",
-            timeout=4
-        ).json()
-        data["uv"] = round(resp_uv["daily"]["uv_index_max"][0], 1)
+        aqi_url = f'https://air-quality-api.open-meteo.com/v1/air-quality?latitude={LAT}&longitude={LON}&current=us_aqi'
+        aqi = requests.get(aqi_url, timeout=3).json()['current']['us_aqi']
+        data['aqi'] = round(aqi)
     except Exception as e:
-        print(f"UV error: {e}")
-
-    # AQI
-    try:
-        resp_aqi = requests.get(
-            f"https://air-quality-api.open-meteo.com/v1/air-quality"
-            f"?latitude={LAT}&longitude={LON}&current=us_aqi",
-            timeout=4
-        ).json()
-        data["aqi"] = round(resp_aqi["current"]["us_aqi"])
-    except Exception as e:
-        print(f"AQI error: {e}")
+        print(f"AQI API unavailable: {e}")
 
     return data
 
