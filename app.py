@@ -103,15 +103,26 @@ def build_svg(obs):
         )
 
     if sun_alt > -6:
-        sunset = ephem.localtime(obs.next_setting(ephem.Sun())).strftime('%H:%M')
+        # 1. Get the raw UTC sunset time from ephem
+        next_setting_utc = obs.next_setting(ephem.Sun()).datetime()
+        
+        # 2. Add 5 hours and 30 minutes to convert UTC to IST
+        # (Using a simple timedelta so we don't have to import heavy timezone libraries)
+        from datetime import timedelta
+        sunset_ist = next_setting_utc + timedelta(hours=5, minutes=30)
+        
+        # 3. Format the local IST time string
+        sunset_str = sunset_ist.strftime('%H:%M')
+        
         p.append(
             f'<text x="{cx}" y="{cy - 25}" text-anchor="middle" '
             f'fill="#000" font-size="16" font-family="Georgia" font-weight="bold">Sky map clears at</text>'
         )
         p.append(
             f'<text x="{cx}" y="{cy + 15}" text-anchor="middle" '
-            f'fill="#000" font-size="28" font-family="Georgia" font-weight="bold">{sunset}</text>'
+            f'fill="#000" font-size="28" font-family="Georgia" font-weight="bold">{sunset_str}</text>'
         )
+
     else:
         # Stars
         for name in STAR_NAMES:
