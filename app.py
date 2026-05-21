@@ -408,13 +408,3 @@ PORTFOLIO_HTML = """<!DOCTYPE html>
 
 # ── Routes ────────────────────────────────────────────────
 
-@app.route('/')
-def dashboard():
-    # If Render wakes up fresh, run an instant refresh to guarantee the Kobo gets real data
-    if _cache['data']['sky'] == '':
-        refresh()
-    return render_template_string(HTML, d=_cache['data'])
-
-@app.route('/portfolio')
-def portfolio():
-    return render_template_string(PORTFOLIO_HTML, tools=MY_TOOLS)
