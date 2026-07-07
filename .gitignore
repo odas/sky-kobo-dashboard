@@ -1,0 +1,16 @@
+# Secrets — never commit
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Downloaded audiobooks (193MB+, re-fetchable via get_mp3.py)
+Asimov_Downloads/
+
+# Hoarded old copies, kept locally out of version control
+_archive/
