@@ -22,7 +22,9 @@ _archive/
 # History lives in a nested repo at docs/.git which has NO REMOTE — there is
 # no push path to GitHub at all, by construction rather than by discipline.
 #
-# Note the trailing /* — a bare `docs` excludes the DIRECTORY, and git won't
-# descend into an excluded directory, so any !docs/... re-include underneath
-# would silently do nothing. Excluding the contents keeps that option open.
-docs/*
+# The whole DIRECTORY is excluded, deliberately. The `docs/*` form (which
+# exists so `!docs/keep-me.md` re-includes can work) is WRONG here: git stops
+# at the nested docs/.git and reports the repo itself as `?? docs/`, leaving
+# every git status noisy and one `git add -A` away from committing docs/ as a
+# stray gitlink. No re-includes are wanted, so exclude the folder outright.
+docs/
