@@ -15,5 +15,14 @@ Asimov_Downloads/
 # Hoarded old copies, kept locally out of version control
 _archive/
 
-# Chat-export narrative corpus — personal transcripts, never commit.
-docs/*-narrative/
+# ── docs/ is LOCAL-ONLY, fleet-wide convention (2026-08-08) ────────────────
+# Nothing under docs/ goes to GitHub. STATUS.md and fixes.md hold in-progress
+# decisions and personal notes a public reader shouldn't see, and one shape
+# across every app beats per-repo exceptions.
+# History lives in a nested repo at docs/.git which has NO REMOTE — there is
+# no push path to GitHub at all, by construction rather than by discipline.
+#
+# Note the trailing /* — a bare `docs` excludes the DIRECTORY, and git won't
+# descend into an excluded directory, so any !docs/... re-include underneath
+# would silently do nothing. Excluding the contents keeps that option open.
+docs/*
