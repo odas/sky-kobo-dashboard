@@ -1,10 +1,11 @@
 import ephem
 import math
+import os
 import time
 import threading
 import requests
 from flask import Flask, render_template_string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 
@@ -13,6 +14,12 @@ LAT  = '18.5793'
 LON  = '73.9089'
 ELEV = 559          # metres above sea level
 IST  = timedelta(hours=5, minutes=30)   # UTC offset for IST
+
+
+def utcnow():
+    """Naive UTC datetime. datetime.utcnow() is deprecated since Python 3.12."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 # ── Stars ──────────────────────────────────────────────────
 STAR_NAMES = [
@@ -58,7 +65,7 @@ def make_observer():
     obs.lat       = LAT
     obs.lon       = LON
     obs.elevation = ELEV
-    obs.date      = ephem.date(datetime.utcnow())   # not deprecated
+    obs.date      = ephem.date(utcnow())
     return obs
 
 
@@ -243,7 +250,7 @@ def refresh():
         sky = FALLBACK_SVG
 
     # IST time for display (works regardless of server timezone)
-    now_ist  = datetime.utcnow() + IST
+    now_ist  = utcnow() + IST
     _cache['data'] = {
         'weather': fetch_weather(),
         'sky':     sky,
@@ -367,4 +374,6 @@ if __name__ == '__main__':
     refresh()
     print("Ready.")
     threading.Thread(target=background_refresh, daemon=True).start()
-    app.run(host='0.0.0.0', port=5002, debug=False)
+    # PORT env var is how cockpit/pm2 and Render both pass the port; 5002 is
+    # this app's slot in the fleet (see cockpit/apps.json) when run bare.
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5002)), debug=False)
