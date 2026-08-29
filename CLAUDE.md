@@ -28,11 +28,11 @@ in months and that nothing in your context is current.
 
 ## Status: alive on purpose, not in daily use (OD, 2026-08-30)
 
-OD does not use this app day to day. It stays because it was one of her earliest
-Claude projects, she learned a great deal building it, and it demos well to an
-interviewer precisely because it is unusual. **Expect more sessions here aimed at
-harvesting those learnings** from `docs/kobo-sky-narrative/` — treat the history as
-material, not clutter. Don't propose retiring or consolidating this repo.
+Not in daily use, and that is settled — it is kept as a finished thing rather than
+maintained as a live one. It was one of the earliest projects built this way and the
+build history is the valuable part. **Expect sessions here that mine
+`docs/kobo-sky-narrative/` for that history** — treat it as material, not clutter.
+Don't propose retiring or consolidating this repo.
 
 ## Where it runs, and where it doesn't
 
@@ -44,10 +44,9 @@ it as evidence of a host.
 `app.py` reads `$PORT`, default 5002, which is this app's slot in
 `~/dev/cockpit/apps.json`. Don't hardcode a port.
 
-⚠ Known stale, outside this repo, **held for OD's next wrap to mother — do not edit
-cockpit from here**: that `apps.json` entry's `desc` describes a Kobo *reading
-tracker* (a different project) and claims "(Also on Render.)". Both wrong. Details in
-`docs/fixes.md`.
+⚠ That `apps.json` entry is stale — its description belongs to a different project
+and claims a Render deploy that does not exist. **Held for a cockpit session; do not
+edit cockpit from here.** Details in `docs/fixes.md`.
 
 ## Don't rebuild the star chart here — the question is CLOSED
 
@@ -55,9 +54,8 @@ A much richer sky renderer (Skyfield, ~236 stars, constellation lines) was built
 June 2026 and lives in **task-dash** at `/sky`, which OD uses daily. This repo's
 simpler PyEphem render stays as it is.
 
-The June chats record OD disliking that this render's stars show no constellation
-lines. **She closed that on 2026-08-30: long forgotten, not planned.** So don't
-resurface it as a suggestion — the render is finished, not unfinished. If a future
+The June chats record dissatisfaction that this render's stars show no constellation
+lines. **Closed 2026-08-30: not planned.** So don't resurface it as a suggestion — the render is finished, not unfinished. If a future
 session finds the complaint in `docs/kobo-sky-narrative/` and reads it as an open
 item, that is this paragraph's job to prevent.
 
@@ -94,12 +92,12 @@ outside `docs/` is world-readable, which is the entire reason `docs/` is local-o
   of hers. Branch anyway for work that won't fit one sitting, or throwaway
   experiments.)*
 - **Commit `docs/` from inside `docs/`**, as a separate commit from the root repo.
-- **Prompt OD to commit and push at the end of a session that changed anything** —
-  she has said she forgets, and this repo goes quiet for months, so an uncommitted
-  diff here is invisible for a long time. Commit when she says yes; **push is a
-  separate ask, because the remote is public.** Before pushing, confirm nothing
-  personal escaped `docs/`.
-- Don't push without being asked.
+- **Prompt at the end of any session that changed something** — this repo goes quiet
+  for months, so an uncommitted diff here stays invisible for a long time. Commit when
+  asked; **treat push as a separate ask, because this remote is public.** Before
+  pushing, check what becomes world-readable — `git diff origin/main..HEAD` and
+  `git ls-tree -r --name-only HEAD`.
+- Don't push unasked.
 
 ## Retiring or rehoming a file
 
