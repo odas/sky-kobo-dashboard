@@ -2,7 +2,15 @@
 
 A Flask + PyEphem night sky map for Pune, rendered as one SVG page and read on a
 wall-mounted Kobo Touch (hence the 180° CSS rotation and the no-flexbox HTML —
-the Kobo's browser is ancient WebKit). Also deployed on Render.
+the Kobo's browser is ancient WebKit).
+
+**Delivery is local wifi only — there is no cloud deploy** (OD, 2026-08-30).
+The Kobo hits the Mac's LAN address directly. Of OD's apps only `learning` is on
+Render. The `Procfile` here is a kept-but-unwired artefact; don't read it as
+evidence of a live host, and don't infer a deploy step that doesn't exist.
+
+The GitHub remote **is** real and **public**: `odas/sky-kobo-dashboard`. Anything
+outside `docs/` is world-readable — that is the reason `docs/` exists.
 
 ## Status: alive on purpose, not in daily use (OD, 2026-08-30)
 

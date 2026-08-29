@@ -31,14 +31,17 @@ Port 5002 is this app's slot in the local fleet (`~/dev/cockpit/apps.json`).
 `app.py` reads `$PORT` and falls back to 5002, which is what both pm2 and
 Render pass in.
 
-## Deploy to Render.com
-1. Push to GitHub
-2. New Web Service on render.com → connect repo
-3. Build command: `pip install -r requirements.txt`
-4. Render detects the start command from the `Procfile`
-5. Free tier — note it sleeps after ~15 min with no **inbound** request. The
-   internal refresh thread does not count as traffic, so the Kobo's 30-minute
-   page load will usually hit a cold start (~30s). That is expected, not a bug.
+## Running it for real
+
+There is no cloud deploy. The Kobo reaches the app over local wifi at
+`http://<mac-local-ip>:5002`, which is the whole point — no account, no cold
+start, no dependency on anything outside the house.
+
+pm2 keeps it up locally as `kobo-sky-5002` (see `~/dev/cockpit`).
+
+The `Procfile` is kept because `gunicorn app:app --bind 0.0.0.0:$PORT` is still
+the correct way to run this behind a real server, and `app.py` honours `$PORT`
+either way. It is not currently wired to any host.
 
 ## Customise
 - Change `LAT` / `LON` / `ELEV` for your location
