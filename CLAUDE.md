@@ -49,14 +49,17 @@ cockpit from here**: that `apps.json` entry's `desc` describes a Kobo *reading
 tracker* (a different project) and claims "(Also on Render.)". Both wrong. Details in
 `docs/fixes.md`.
 
-## Don't rebuild the star chart here
+## Don't rebuild the star chart here — the question is CLOSED
 
 A much richer sky renderer (Skyfield, ~236 stars, constellation lines) was built in
 June 2026 and lives in **task-dash** at `/sky`, which OD uses daily. This repo's
-simpler PyEphem render stays as it is. OD has an on-record complaint about this
-render — *"random stars showed no visual info on which constellation it linked to"* —
-so porting the lines back is a real idea, but it is a **feature request on a
-deliberately-frozen portfolio piece. Raise it; don't assume it.**
+simpler PyEphem render stays as it is.
+
+The June chats record OD disliking that this render's stars show no constellation
+lines. **She closed that on 2026-08-30: long forgotten, not planned.** So don't
+resurface it as a suggestion — the render is finished, not unfinished. If a future
+session finds the complaint in `docs/kobo-sky-narrative/` and reads it as an open
+item, that is this paragraph's job to prevent.
 
 ## Records — update them in the same session, unprompted
 
